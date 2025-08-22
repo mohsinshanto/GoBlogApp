@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gin-contrib/cors" // 👈 import cors
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,19 +17,29 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	// Get trusted proxies from env or fallback
+
 	proxies := os.Getenv("TRUSTED_PROXIES")
 	var trustedList []string
 	if proxies != "" {
-		trustedList = strings.Split(proxies, ",") // support multiple IPs
+		trustedList = strings.Split(proxies, ",")
 	} else {
-		trustedList = []string{"127.0.0.1"} // default for dev
+		trustedList = []string{"127.0.0.1"}
 	}
+
 	r := gin.Default()
-	// Set trusted proxies
+
 	if err := r.SetTrustedProxies(trustedList); err != nil {
 		log.Fatalf("Failed to set trusted proxies: %v", err)
 	}
+
+	// 👇 Enable CORS
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3000"}, // your frontend
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
+
 	routes.RegisterBlogRoutes(r)
 	routes.RegisterUserRoutes(r)
 	routes.RegisterCommentRoutes(r)
