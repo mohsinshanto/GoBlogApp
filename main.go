@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gin-contrib/cors" // 👈 import cors
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,14 +27,14 @@ func main() {
 	}
 
 	r := gin.Default()
+	r.Static("/uploads", "./uploads")
 
 	if err := r.SetTrustedProxies(trustedList); err != nil {
 		log.Fatalf("Failed to set trusted proxies: %v", err)
 	}
 
-	// 👇 Enable CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"}, // your frontend
+		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,

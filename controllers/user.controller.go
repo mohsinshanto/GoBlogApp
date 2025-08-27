@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET")) // Store in env ideally
+var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 func Register(c *gin.Context) {
 	// Define input struct with only required fields
@@ -94,5 +94,78 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"msg":   "Login successful",
 		"token": tokenString,
+	})
+}
+func GetProfile(c *gin.Context) {
+	// Get user ID from JWT middleware
+	rawID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"msg": "Unauthorized"})
+		return
+	}
+	userID := uint(rawID.(float64))
+
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"msg": "User not found"})
+		return
+	}
+
+	// Return user info (omit password)
+	c.JSON(http.StatusOK, gin.H{
+		"id":           user.ID,
+		"username":     user.Username,
+		"email":        user.Email,
+		"profileImage": user.ProfileImage,
+	})
+}
+func UpdateProfile(c *gin.Context) {
+	// Get user ID from context
+	rawID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"msg": "Unauthorized"})
+		return
+	}
+	userID := uint(rawID.(float64))
+
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"msg": "User not found"})
+		return
+	}
+
+	// Parse form-data for image
+	username := c.PostForm("username")
+	email := c.PostForm("email")
+
+	// Update profile image if uploaded
+	file, err := c.FormFile("profileImage")
+	if err == nil {
+		// Save the file locally (or to cloud)
+		path := "uploads/" + file.Filename
+		if err := c.SaveUploadedFile(file, path); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to upload image"})
+			return
+		}
+		user.ProfileImage = "/" + path
+	}
+
+	if username != "" {
+		user.Username = username
+	}
+	if email != "" {
+		user.Email = email
+	}
+
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Update failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"msg":          "Profile updated",
+		"username":     user.Username,
+		"email":        user.Email,
+		"profileImage": user.ProfileImage,
 	})
 }
