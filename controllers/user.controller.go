@@ -163,7 +163,7 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"msg":          "Profile updated",
+		"id":           user.ID,
 		"username":     user.Username,
 		"email":        user.Email,
 		"profileImage": user.ProfileImage,
