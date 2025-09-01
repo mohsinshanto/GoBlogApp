@@ -94,6 +94,11 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"msg":   "Login successful",
 		"token": tokenString,
+		"user": gin.H{
+			"ID":       user.ID,
+			"username": user.Username,
+			"email":    user.Email,
+		},
 	})
 }
 func GetProfile(c *gin.Context) {

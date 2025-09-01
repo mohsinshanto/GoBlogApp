@@ -139,13 +139,142 @@ func DeleteById(c *gin.Context) {
 }
 
 // public routes
+// func GetAllPosts(c *gin.Context) {
+// 	// Default values
+// 	page := 1
+// 	limit := 10
+// 	sort := c.DefaultQuery("sort", "desc")
+// 	search := c.Query("search")
+// 	userIDStr := c.Query("user_id")
+
+// 	// Parse page and limit
+// 	if p := c.Query("page"); p != "" {
+// 		if parsedPage, err := strconv.Atoi(p); err == nil && parsedPage > 0 {
+// 			page = parsedPage
+// 		}
+// 	}
+// 	if l := c.Query("limit"); l != "" {
+// 		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 {
+// 			limit = parsedLimit
+// 		}
+// 	}
+
+// 	var blogs []models.Blog
+// 	var total int64
+
+// 	query := config.DB.Model(&models.Blog{})
+
+// 	// Filter by search keyword
+// 	if search != "" {
+// 		query = query.Where("title LIKE ?", "%"+search+"%")
+// 	}
+
+// 	// Filter by user ID (converted to int)
+// 	if userIDStr != "" {
+// 		if userID, err := strconv.Atoi(userIDStr); err == nil {
+// 			query = query.Where("user_id = ?", userID)
+// 		} else {
+// 			c.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid user_id"})
+// 			return
+// 		}
+// 	}
+
+// 	// Count total posts after filters
+// 	if err := query.Count(&total).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to count posts"})
+// 		return
+// 	}
+
+// 	offset := (page - 1) * limit
+// 	order := "created_at desc"
+// 	if sort == "asc" {
+// 		order = "created_at asc"
+// 	}
+
+// 	// Retrieve posts with pagination and sorting
+// 	if err := query.Order(order).Limit(limit).Offset(offset).Find(&blogs).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to retrieve posts"})
+// 		return
+// 	}
+
+//		c.JSON(http.StatusOK, gin.H{
+//			"page":  page,
+//			"limit": limit,
+//			"total": total,
+//			"posts": blogs,
+//		})
+//	}
+// func GetAllPosts(c *gin.Context) {
+// 	// Default values
+// 	page := 1
+// 	limit := 10
+// 	sort := c.DefaultQuery("sort", "desc")
+// 	search := c.Query("search")
+// 	userIDStr := c.Query("user_id")
+
+// 	if p := c.Query("page"); p != "" {
+// 		if parsedPage, err := strconv.Atoi(p); err == nil && parsedPage > 0 {
+// 			page = parsedPage
+// 		}
+// 	}
+// 	if l := c.Query("limit"); l != "" {
+// 		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 {
+// 			limit = parsedLimit
+// 		}
+// 	}
+
+// 	var blogs []models.Blog
+// 	var total int64
+
+// 	query := config.DB.Model(&models.Blog{})
+
+// 	// Filter by search keyword
+// 	if search != "" {
+// 		query = query.Where("title LIKE ?", "%"+search+"%")
+// 	}
+
+// 	// Filter by user ID
+// 	if userIDStr != "" {
+// 		if userID, err := strconv.Atoi(userIDStr); err == nil {
+// 			query = query.Where("user_id = ?", uint(userID)) // cast to uint
+// 		} else {
+// 			c.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid user_id"})
+// 			return
+// 		}
+// 	}
+
+// 	// Count total posts
+// 	if err := query.Count(&total).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to count posts"})
+// 		return
+// 	}
+
+// 	offset := (page - 1) * limit
+// 	order := "created_at desc"
+// 	if sort == "asc" {
+// 		order = "created_at asc"
+// 	}
+
+// 	// Retrieve posts
+// 	if err := query.Order(order).Limit(limit).Offset(offset).Find(&blogs).Error; err != nil {
+// 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to retrieve posts"})
+// 		return
+// 	}
+
+//		c.JSON(http.StatusOK, gin.H{
+//			"page":  page,
+//			"limit": limit,
+//			"total": total,
+//			"posts": blogs,
+//		})
+//	}
 func GetAllPosts(c *gin.Context) {
-	// Default values
+	// Default pagination and sorting values
 	page := 1
 	limit := 10
 	sort := c.DefaultQuery("sort", "desc")
 	search := c.Query("search")
-	userIDStr := c.Query("user_id")
+	userIDStr := c.Query("user_id") // optional filter
 
 	// Parse page and limit
 	if p := c.Query("page"); p != "" {
@@ -164,19 +293,19 @@ func GetAllPosts(c *gin.Context) {
 
 	query := config.DB.Model(&models.Blog{})
 
-	// Filter by search keyword
+	// Search filter
 	if search != "" {
 		query = query.Where("title LIKE ?", "%"+search+"%")
 	}
 
-	// Filter by user ID (converted to int)
+	// User filter (My Posts)
 	if userIDStr != "" {
-		if userID, err := strconv.Atoi(userIDStr); err == nil {
-			query = query.Where("user_id = ?", userID)
-		} else {
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid user_id"})
 			return
 		}
+		query = query.Where("user_id = ?", uint(userID))
 	}
 
 	// Count total posts after filters
@@ -185,13 +314,13 @@ func GetAllPosts(c *gin.Context) {
 		return
 	}
 
+	// Sorting and pagination
 	offset := (page - 1) * limit
 	order := "created_at desc"
 	if sort == "asc" {
 		order = "created_at asc"
 	}
 
-	// Retrieve posts with pagination and sorting
 	if err := query.Order(order).Limit(limit).Offset(offset).Find(&blogs).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to retrieve posts"})
 		return
