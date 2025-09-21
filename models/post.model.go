@@ -18,4 +18,5 @@ type Blog struct {
 
 	Published bool `json:"published" gorm:"not null;default:false"`
 	Draft     bool `json:"draft" gorm:"not null;default:false"`
+	User      User `json:"user" gorm:"foreignKey:UserID"`
 }

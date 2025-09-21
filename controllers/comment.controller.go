@@ -9,6 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type CommentResponse struct {
+	ID       uint   `json:"id"`
+	Content  string `json:"content"`
+	PostID   uint   `json:"post_id"`
+	UserID   uint   `json:"user_id"`
+	Username string `json:"username"`
+}
+
 // authenticated user
 func CreateComment(c *gin.Context) {
 	// Get user_id from context (set in middleware)
@@ -211,4 +219,32 @@ func GetCommentCount(c *gin.Context) {
 		"post_id":        postID,
 		"total_comments": count,
 	})
+}
+
+// Get all comments for a specific post
+func GetCommentsByPost(c *gin.Context) {
+	postIDParam := c.Param("post_id")
+
+	var comments []models.Comment
+	if err := config.DB.
+		Preload("User").
+		Where("post_id = ?", postIDParam).
+		Find(&comments).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Map DB model to response model
+	var response []CommentResponse
+	for _, comment := range comments {
+		response = append(response, CommentResponse{
+			ID:       comment.ID,
+			Content:  comment.Content,
+			PostID:   comment.PostID,
+			UserID:   comment.UserID,
+			Username: comment.User.Username,
+		})
+	}
+
+	c.JSON(http.StatusOK, response)
 }

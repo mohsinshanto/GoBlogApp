@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // private routes
@@ -163,71 +164,6 @@ func DeleteById(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"msg": "Post deleted successfully"})
 }
 
-// func GetAllPosts(c *gin.Context) {
-// 	// Default pagination and sorting values
-// 	page := 1
-// 	limit := 10
-// 	sort := c.DefaultQuery("sort", "desc")
-// 	search := c.Query("search")
-// 	userIDStr := c.Query("user_id") // optional filter
-
-// 	// Parse page and limit
-// 	if p := c.Query("page"); p != "" {
-// 		if parsedPage, err := strconv.Atoi(p); err == nil && parsedPage > 0 {
-// 			page = parsedPage
-// 		}
-// 	}
-// 	if l := c.Query("limit"); l != "" {
-// 		if parsedLimit, err := strconv.Atoi(l); err == nil && parsedLimit > 0 {
-// 			limit = parsedLimit
-// 		}
-// 	}
-
-// 	var blogs []models.Blog
-// 	var total int64
-
-// 	query := config.DB.Model(&models.Blog{}).Where("published = ?", true)
-
-// 	// Search filter
-// 	if search != "" {
-// 		query = query.Where("title LIKE ?", "%"+search+"%")
-// 	}
-
-// 	// User filter (My Posts)
-// 	if userIDStr != "" {
-// 		userID, err := strconv.Atoi(userIDStr)
-// 		if err != nil {
-// 			c.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid user_id"})
-// 			return
-// 		}
-// 		query = query.Where("user_id = ?", uint(userID))
-// 	}
-
-// 	// Count total posts after filters
-// 	if err := query.Count(&total).Error; err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to count posts"})
-// 		return
-// 	}
-
-// 	// Sorting and pagination
-// 	offset := (page - 1) * limit
-// 	order := "created_at desc"
-// 	if sort == "asc" {
-// 		order = "created_at asc"
-// 	}
-
-// 	if err := query.Order(order).Limit(limit).Offset(offset).Find(&blogs).Error; err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"msg": "Failed to retrieve posts"})
-// 		return
-// 	}
-
-//		c.JSON(http.StatusOK, gin.H{
-//			"page":  page,
-//			"limit": limit,
-//			"total": total,
-//			"posts": blogs,
-//		})
-//	}
 func GetAllPosts(c *gin.Context) {
 	page := 1
 	limit := 10
@@ -306,10 +242,13 @@ func GetPostById(c *gin.Context) {
 	}
 
 	var blog models.Blog
-	if err := config.DB.First(&blog, uint(blogID)).Error; err != nil {
+	if err := config.DB.
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Select("ID", "Username") // only bring username
+		}).
+		First(&blog, uint(blogID)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"msg": "Post not found"})
 		return
 	}
 	c.JSON(http.StatusOK, blog)
-
 }

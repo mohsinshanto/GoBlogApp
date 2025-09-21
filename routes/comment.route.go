@@ -12,10 +12,9 @@ func RegisterCommentRoutes(r *gin.Engine) {
 	// Anyone can view comments
 	commentRoutes.GET("/", controllers.GetAllComments)
 	commentRoutes.GET("/:id", controllers.GetComment)
-	// for a single post
 	commentRoutes.GET("/count/:post_id", controllers.GetCommentCount)
+	commentRoutes.GET("/post/:post_id", controllers.GetCommentsByPost) // ✅ new
 	commentRoutes.Use(middlewares.AuthMiddleware())
-	// only Authenticated users
 	{
 		commentRoutes.POST("/", controllers.CreateComment)
 		commentRoutes.PUT("/:id", controllers.UpdateComment)
